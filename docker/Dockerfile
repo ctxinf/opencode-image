@@ -2,7 +2,7 @@
 FROM debian:bookworm
 
 RUN apt-get update && \
-    apt-get install -y ca-certificates curl wget ripgrep iputils-ping procps && \
+    apt-get install -y ca-certificates curl wget git ripgrep iputils-ping procps && \
     rm -rf /var/lib/apt/lists/*
 
 # Pinned version = stable build cache
@@ -19,6 +19,11 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENC
 COPY ./config/opencode.jsonc /root/.config/opencode/opencode.jsonc
 
 WORKDIR /workspace
+
+# Without a git repo at the workdir, opencode falls back to its "global"
+# project rooted at "/" — init an empty repo so /workspace is the project.
+# The named workspace volume inherits it on first creation.
+RUN git init -q -b main /workspace
 
 VOLUME ["/root/.config/opencode", "/root/.local/share/opencode", "/workspace"]
 

@@ -15,6 +15,7 @@ const IMAGE = process.env.OPENCODE_IMAGE ?? "ghcr.io/ctxinf/opencode-image:lates
 
 const sb = await Sandbox.builder("opencode-example")
   .image(IMAGE)
+  .workdir("/workspace") // exec ignores image WORKDIR; without this opencode opens "/" as project
   .memory(512)
   // opencode needs egress to reach AI APIs
   .network((n) =>
@@ -22,6 +23,7 @@ const sb = await Sandbox.builder("opencode-example")
       .policyFromBuilder(new NetworkPolicyBuilder().defaultEgress("allow").defaultIngress("allow"))
       .portBind("0.0.0.0", HOST_PORT, CTR_PORT)
   )
+  .replace()
   .create();
 
 console.log(`opencode web: http://localhost:${HOST_PORT}  (Ctrl+C to stop)`);
