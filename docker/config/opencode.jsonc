@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  
+  // 1. 设置默认使用的 MiMo 模型（格式为 provider_id/model_id）
+  "model": "mimo/mimo-v2.5-pro",
+  
+  // 2. 关闭遥测与会话共享
+  "share": "disabled",
+  
+  // 3. 禁用自动更新
+  "autoupdate": false,
+  
+  // 4. 禁用一切内置 LSP
+  "lsp": false,
+  
+  "experimental": {
+    // 禁用 OpenTelemetry 导出
+    "openTelemetry": false
+  },
+  
+  // 5. 配置小米 MiMo Provider（使用兼容 OpenAI 的自定义 Provider 模式）
+  "provider": {
+    "mimo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Xiaomi MiMo",
+      "options": {
+        // 根据您所使用的服务类型选择以下一种 baseURL 填入：
+        // - 官方按量付费 API 接口: "https://api.xiaomimimo.com/v1"
+        // - 官方 Token Plan 订阅接口（国内）: "https://token-plan-cn.xiaomimimo.com/v1"
+        // - 官方 Token Plan 订阅接口（新加坡）: "https://token-plan-sgp.xiaomimimo.com/v1"
+        "baseURL": "https://token-plan-sgp.xiaomimimo.com/v1",
+        // "apiKey": "" //不要填写, 也不通过env注入, 直接在用户界面填写
+      },
+      "models": {
+        "mimo-v2.5-pro": {
+          "name": "MiMo-V2.5-Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "modalities": {
+            "input": [ "text" ],
+            "output": [ "text" ]
+          }
+        },
+        "mimo-v2.5": {
+          "name": "MiMo-V2.5",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "modalities": {
+            "input": [ "text" ],
+            "output": [ "text" ]
+          }
+        }
+      }
+    }
+  }
+}

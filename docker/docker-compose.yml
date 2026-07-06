@@ -1,0 +1,22 @@
+# docker compose up -d --build 后访问 http://localhost:7777
+services:
+  opencode-env:
+    build:
+      context: .
+    image: opencode-env:latest
+    container_name: opencode-env
+    ports:
+      - "7777:7777"
+    working_dir: ${OPENCODE_WORKDIR:-/workspace}
+    volumes:
+      - opencode-config:/root/.config/opencode
+      - opencode-data:/root/.local/share/opencode
+      - workspace:/workspace
+    # 调试用：改成 command: ["sleep", "infinity"]，然后 docker exec -it opencode-env sh
+    restart: unless-stopped
+
+# 具名卷：首次创建时继承镜像内容（含注入的 opencode.jsonc），重启不丢数据
+volumes:
+  opencode-config:
+  opencode-data:
+  workspace:
