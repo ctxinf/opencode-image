@@ -1,0 +1,59 @@
+# Track anomalyco/opencode releases: every 2 weeks, build an image of the
+# latest upstream release (skipped if that version is already on GHCR).
+name: track-upstream
+
+on:
+  schedule:
+    - cron: "0 3 1,15 * *" # 1st and 15th of each month ≈ every 2 weeks
+  workflow_dispatch:
+
+jobs:
+  build-latest-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest opencode release
+        id: upstream
+        run: |
+          VERSION=$(curl -fsSL https://api.github.com/repos/anomalyco/opencode/releases/latest \
+            | jq -r '.tag_name | ltrimstr("v")')
+          [[ -n "$VERSION" && "$VERSION" != "null" ]] || { echo "no release found"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip if already published
+        id: exists
+        run: |
+          if docker manifest inspect "ghcr.io/${{ github.repository_owner }}/opencode-image:${{ steps.upstream.outputs.version }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "opencode ${{ steps.upstream.outputs.version }} already on GHCR, nothing to do"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.exists.outputs.skip != 'true'
+
+      - name: Build and push
+        if: steps.exists.outputs.skip != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          push: true
+          build-args: OPENCODE_VERSION=${{ steps.upstream.outputs.version }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/opencode-image:latest
+            ghcr.io/${{ github.repository_owner }}/opencode-image:${{ steps.upstream.outputs.version }}
+          labels: |
+            org.opencontainers.image.description=Unofficial community Docker image of opencode web — opencode ${{ steps.upstream.outputs.version }} (scheduled upstream build)
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

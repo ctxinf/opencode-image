@@ -29,6 +29,8 @@ services:
       # Without a password opencode logs "server is unsecured" and the web UI
       # is open to anyone who can reach the port. Set it for any real deployment.
       - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+      # Initial workspace dir; created and git-inited on start if missing
+      - OPENCODE_WORKDIR=${OPENCODE_WORKDIR:-/workspace}
     volumes:
       - opencode-config:/root/.config/opencode
       - opencode-data:/root/.local/share/opencode
@@ -56,6 +58,15 @@ The three named volumes persist across restarts:
 
 The baked-in config (`docker/config/opencode.jsonc`) disables sharing, auto-update, LSP and telemetry. API keys are entered in the web UI, not baked into the image.
 
+Runtime env vars:
+
+| Var | Default | Purpose |
+|---|---|---|
+| `OPENCODE_SERVER_PASSWORD` | *(unset — unsecured!)* | web UI password |
+| `OPENCODE_WORKDIR` | `/workspace` | initial project dir, e.g. `-e OPENCODE_WORKDIR=/workspace/app1` |
+
+The image runs under [tini](https://github.com/krallin/tini), so Ctrl+C on a foreground `docker run` stops the container cleanly.
+
 ## 2. Run in MicroSandbox
 
 [`example/microsandbox-run.ts`](example/microsandbox-run.ts) starts the GHCR image in a microVM like `docker run --rm` — the sandbox lives as long as the script:
@@ -67,6 +78,12 @@ npm run sandbox -- 18000   # custom host port
 ```
 
 Override the image with `OPENCODE_IMAGE=...` if needed.
+
+[`example/microsandbox-custom-workspace.ts`](example/microsandbox-custom-workspace.ts) shows a customized setup: it seeds `/workspace/app1` through the sandbox fs API (`mkdir` + `write`) and starts opencode with that dir as the project:
+
+```bash
+npm run sandbox:custom
+```
 
 ## 3. Build locally (optional)
 
@@ -83,8 +100,9 @@ The Dockerfile downloads the opencode release tarball at build time — no binar
 
 ## CI
 
-- **docker-image.yml** — on push to `main` (touching `docker/`), tags `v*`, or manual dispatch: builds and pushes `ghcr.io/ctxinf/opencode-image` with `latest`, semver, and commit-SHA tags.
-- **check.yml** — type-checks the TypeScript example with the TypeScript 7 preview (`tsgo --noEmit`).
+- **docker-image.yml** — on push to `main`, tags `v*`, or manual dispatch: builds and pushes `ghcr.io/ctxinf/opencode-image` with `latest`, semver, and commit-SHA tags. A tag push `vX.Y.Z` builds opencode `X.Y.Z` and records it in the image description.
+- **track-upstream.yml** — twice a month (1st/15th): builds the latest [anomalyco/opencode](https://github.com/anomalyco/opencode) release and pushes it as `latest` + `<version>`, skipping versions already published.
+- **check.yml** — type-checks the TypeScript examples with the TypeScript 7 preview (`tsgo --noEmit`).
 
 ## Repo layout
 
@@ -95,5 +113,6 @@ docker/
   config/opencode.jsonc    # default opencode config baked into the image
 example/
   microsandbox-run.ts      # minimal MicroSandbox launcher
+  microsandbox-custom-workspace.ts  # seed a custom workspace dir via fs API
 .github/workflows/         # GHCR image publish + type check
 ```

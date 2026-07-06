@@ -1,8 +1,10 @@
 # opencode-image: Debian + opencode CLI, runs `opencode web` by default
 FROM debian:bookworm
 
+# tini = proper PID 1: forwards SIGINT/SIGTERM and reaps children, so
+# Ctrl+C on `docker run` actually stops the container.
 RUN apt-get update && \
-    apt-get install -y ca-certificates curl wget git ripgrep iputils-ping procps && \
+    apt-get install -y ca-certificates curl wget git tini ripgrep iputils-ping procps && \
     rm -rf /var/lib/apt/lists/*
 
 # Pinned version = stable build cache
@@ -18,6 +20,9 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENC
 # Default config; named volumes inherit it on first creation
 COPY ./config/opencode.jsonc /root/.config/opencode/opencode.jsonc
 
+# Initial workspace dir, overridable at runtime: docker run -e OPENCODE_WORKDIR=/workspace/app1
+ENV OPENCODE_WORKDIR=/workspace
+
 WORKDIR /workspace
 
 # Without a git repo at the workdir, opencode falls back to its "global"
@@ -29,4 +34,7 @@ VOLUME ["/root/.config/opencode", "/root/.local/share/opencode", "/workspace"]
 
 EXPOSE 7777
 
-CMD ["opencode", "web", "--port", "7777", "--hostname", "0.0.0.0"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Create + git-init the (possibly overridden) workdir, then exec opencode
+CMD ["/bin/sh", "-c", "mkdir -p \"$OPENCODE_WORKDIR\" && cd \"$OPENCODE_WORKDIR\" && { [ -d .git ] || git init -q -b main .; } && exec opencode web --port 7777 --hostname 0.0.0.0"]

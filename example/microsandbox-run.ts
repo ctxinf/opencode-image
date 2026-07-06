@@ -11,7 +11,7 @@ import { Sandbox, NetworkPolicyBuilder } from "microsandbox";
 
 const HOST_PORT = Number(process.argv[2] ?? 17777);
 const CTR_PORT = 7777;
-const IMAGE = process.env.OPENCODE_IMAGE ?? "ghcr.io/ctxinf/opencode-image:latest"; // TODO: replace ctxinf
+const IMAGE = process.env.OPENCODE_IMAGE ?? "ghcr.io/ctxinf/opencode-image:latest"; 
 
 const sb = await Sandbox.builder("opencode-example")
   .image(IMAGE)

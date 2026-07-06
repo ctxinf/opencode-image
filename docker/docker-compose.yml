@@ -8,12 +8,13 @@ services:
     container_name: opencode
     ports:
       - "7777:7777"
-    working_dir: ${OPENCODE_WORKDIR:-/workspace}
     environment:
       # Without a password opencode logs "server is unsecured" and the web UI
       # is open to anyone who can reach the port. Set it for any real deployment:
       #   OPENCODE_SERVER_PASSWORD=secret docker compose up -d
       - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+      # Initial workspace dir; created and git-inited on start if missing
+      - OPENCODE_WORKDIR=${OPENCODE_WORKDIR:-/workspace}
     volumes:
       - opencode-config:/root/.config/opencode
       - opencode-data:/root/.local/share/opencode
