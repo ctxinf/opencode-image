@@ -1,7 +1,7 @@
 {
   "name": "opencode-image",
   "version": "0.1.0",
-  "description": "Unofficial Docker image for opencode web UI — pull, run, start coding at localhost:7777. Works with plain Docker or MicroSandbox microVMs.",
+  "description": "OpenCode image, for Docker and microsandbox",
   "type": "module",
   "scripts": {
     "check": "npm exec -- tsgo --noEmit",
