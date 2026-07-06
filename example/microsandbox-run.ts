@@ -11,11 +11,11 @@ import { Sandbox, NetworkPolicyBuilder } from "microsandbox";
 
 const HOST_PORT = Number(process.argv[2] ?? 17777);
 const CTR_PORT = 7777;
-const IMAGE = process.env.OPENCODE_IMAGE ?? "ghcr.io/OWNER/opencode-image:latest"; // TODO: replace OWNER
+const IMAGE = process.env.OPENCODE_IMAGE ?? "ghcr.io/ctxinf/opencode-image:latest"; // TODO: replace ctxinf
 
 const sb = await Sandbox.builder("opencode-example")
   .image(IMAGE)
-  .memory(1024)
+  .memory(512)
   // opencode needs egress to reach AI APIs
   .network((n) =>
     n

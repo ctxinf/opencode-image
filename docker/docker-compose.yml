@@ -2,7 +2,7 @@
 services:
   opencode:
     # Published image. To build locally instead: docker compose up -d --build
-    image: ghcr.io/OWNER/opencode-image:latest # TODO: replace OWNER
+    image: ghcr.io/ctxinf/opencode-image:latest # TODO: replace ctxinf
     build:
       context: .
     container_name: opencode

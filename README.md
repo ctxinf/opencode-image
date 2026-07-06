@@ -4,14 +4,14 @@
 
 A minimal Docker image that runs opencode with its built-in web UI (`opencode web`), usable directly with Docker or inside a [MicroSandbox](https://github.com/microsandbox/microsandbox) microVM.
 
-The image is published to GHCR by CI: `ghcr.io/OWNER/opencode-image` <!-- TODO: replace OWNER after deploy -->
+The image is published to GHCR by CI: `ghcr.io/ctxinf/opencode-image` 
 
 ## 1. Run with Docker
 
 Quick throwaway run:
 
 ```bash
-docker run --rm -p 7777:7777 ghcr.io/OWNER/opencode-image:latest
+docker run --rm -p 7777:7777 ghcr.io/ctxinf/opencode-image:latest
 ```
 
 Open http://localhost:7777.
@@ -21,7 +21,7 @@ For a persistent deployment use compose (`docker/docker-compose.yml`):
 ```yaml
 services:
   opencode:
-    image: ghcr.io/OWNER/opencode-image:latest
+    image: ghcr.io/ctxinf/opencode-image:latest
     container_name: opencode
     ports:
       - "7777:7777"
@@ -83,7 +83,7 @@ The Dockerfile downloads the opencode release tarball at build time — no binar
 
 ## CI
 
-- **docker-image.yml** — on push to `main` (touching `docker/`), tags `v*`, or manual dispatch: builds and pushes `ghcr.io/OWNER/opencode-image` with `latest`, semver, and commit-SHA tags.
+- **docker-image.yml** — on push to `main` (touching `docker/`), tags `v*`, or manual dispatch: builds and pushes `ghcr.io/ctxinf/opencode-image` with `latest`, semver, and commit-SHA tags.
 - **check.yml** — type-checks the TypeScript example with the TypeScript 7 preview (`tsgo --noEmit`).
 
 ## Repo layout
