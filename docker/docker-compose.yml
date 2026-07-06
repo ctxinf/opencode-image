@@ -1,21 +1,28 @@
-# docker compose up -d --build 后访问 http://localhost:7777
+# docker compose up -d  ->  http://localhost:7777
 services:
-  opencode-env:
+  opencode:
+    # Published image. To build locally instead: docker compose up -d --build
+    image: ghcr.io/OWNER/opencode-image:latest # TODO: replace OWNER
     build:
       context: .
-    image: opencode-env:latest
-    container_name: opencode-env
+    container_name: opencode
     ports:
       - "7777:7777"
     working_dir: ${OPENCODE_WORKDIR:-/workspace}
+    environment:
+      # Without a password opencode logs "server is unsecured" and the web UI
+      # is open to anyone who can reach the port. Set it for any real deployment:
+      #   OPENCODE_SERVER_PASSWORD=secret docker compose up -d
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
     volumes:
       - opencode-config:/root/.config/opencode
       - opencode-data:/root/.local/share/opencode
       - workspace:/workspace
-    # 调试用：改成 command: ["sleep", "infinity"]，然后 docker exec -it opencode-env sh
+    # Debugging: switch to command: ["sleep", "infinity"], then docker exec -it opencode sh
     restart: unless-stopped
 
-# 具名卷：首次创建时继承镜像内容（含注入的 opencode.jsonc），重启不丢数据
+# Named volumes: seeded from the image on first creation (including the
+# baked-in opencode.jsonc), survive container restarts and re-creation.
 volumes:
   opencode-config:
   opencode-data:

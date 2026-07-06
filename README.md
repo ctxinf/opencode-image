@@ -1,42 +1,52 @@
 # opencode-image
 
-Build a minimal Docker image that runs [opencode](https://github.com/anomalyco/opencode) with its built-in web UI, then run it either directly with Docker or inside a [MicroSandbox](https://github.com/microsandbox/microsandbox) microVM — one isolated, persistent opencode environment per project.
+> **Third-party community image.** This is an unofficial, community-maintained Docker image of [opencode](https://github.com/anomalyco/opencode). It is not affiliated with or endorsed by the opencode project.
 
-## What's inside
+A minimal Docker image that runs opencode with its built-in web UI (`opencode web`), usable directly with Docker or inside a [MicroSandbox](https://github.com/microsandbox/microsandbox) microVM.
 
-```
-docker/
-  Dockerfile               # debian:bookworm + opencode binary, CMD = opencode web
-  docker-compose.yml       # local run with named volumes (config / data / workspace)
-  config/opencode.jsonc    # default opencode config baked into the image
-src/
-  run-sandbox.ts           # spin up the image in a MicroSandbox VM per projectId
-docs/
-  push-to-local-registry.md  # push the image to a local registry for MicroSandbox
-.github/workflows/
-  docker-image.yml         # build & push image to GHCR
-  check.yml                # tsgo type check
+The image is published to GHCR by CI: `ghcr.io/OWNER/opencode-image` <!-- TODO: replace OWNER after deploy -->
+
+## 1. Run with Docker
+
+Quick throwaway run:
+
+```bash
+docker run --rm -p 7777:7777 ghcr.io/OWNER/opencode-image:latest
 ```
 
-## 1. Build the image
+Open http://localhost:7777.
+
+For a persistent deployment use compose (`docker/docker-compose.yml`):
+
+```yaml
+services:
+  opencode:
+    image: ghcr.io/OWNER/opencode-image:latest
+    container_name: opencode
+    ports:
+      - "7777:7777"
+    environment:
+      # Without a password opencode logs "server is unsecured" and the web UI
+      # is open to anyone who can reach the port. Set it for any real deployment.
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+    volumes:
+      - opencode-config:/root/.config/opencode
+      - opencode-data:/root/.local/share/opencode
+      - workspace:/workspace
+    restart: unless-stopped
+
+volumes:
+  opencode-config:
+  opencode-data:
+  workspace:
+```
 
 ```bash
 cd docker
-docker build -t opencode-env:latest .
-# or pin a different opencode version:
-docker build --build-arg OPENCODE_VERSION=1.15.12 -t opencode-env:latest .
+OPENCODE_SERVER_PASSWORD=change-me docker compose up -d
 ```
 
-The Dockerfile downloads the opencode release tarball at build time — no binaries are checked into the repo.
-
-## 2. Run with Docker
-
-```bash
-cd docker
-docker compose up -d --build
-```
-
-Open http://localhost:7777. Three named volumes persist across restarts:
+The three named volumes persist across restarts:
 
 | Volume | Mount | Purpose |
 |---|---|---|
@@ -44,45 +54,46 @@ Open http://localhost:7777. Three named volumes persist across restarts:
 | `opencode-data` | `/root/.local/share/opencode` | sessions / auth / state |
 | `workspace` | `/workspace` | your project files |
 
-The default config (`docker/config/opencode.jsonc`) disables sharing, auto-update, LSP and telemetry. API keys are entered in the web UI, not baked into the image.
+The baked-in config (`docker/config/opencode.jsonc`) disables sharing, auto-update, LSP and telemetry. API keys are entered in the web UI, not baked into the image.
 
-## 3. Run in MicroSandbox
+## 2. Run in MicroSandbox
 
-MicroSandbox pulls images from an OCI registry (it does not read the local Docker daemon cache), so first push the image to a local registry — see [docs/push-to-local-registry.md](docs/push-to-local-registry.md).
-
-Then:
+[`example/microsandbox-run.ts`](example/microsandbox-run.ts) starts the GHCR image in a microVM like `docker run --rm` — the sandbox lives as long as the script:
 
 ```bash
 npm install
-
-# npx tsx src/run-sandbox.ts [projectId] [hostPort]
-npm run sandbox -- my-project 17777
+npm run sandbox            # -> http://localhost:17777
+npm run sandbox -- 18000   # custom host port
 ```
 
-The script:
+Override the image with `OPENCODE_IMAGE=...` if needed.
 
-1. Creates (or reuses) three named volumes scoped to the `projectId`.
-2. Creates (or reconnects to) a detached sandbox named `opencode-${projectId}` with egress allowed and the web port bound to the host.
-3. Starts `opencode web` and prints the URL: `http://localhost:17777`.
+## 3. Build locally (optional)
 
-The sandbox keeps running after the script exits. Stop it with `msb stop opencode-<projectId>`.
-
-Use `OPENCODE_IMAGE` to override the image reference (default `localhost:5000/opencode-env:latest`), e.g. the GHCR image published by CI:
+Only needed if you want to change the image itself:
 
 ```bash
-OPENCODE_IMAGE=ghcr.io/<owner>/opencode-env:latest npm run sandbox -- my-project
+cd docker
+docker build -t opencode-image:latest .
+# pin a different opencode version:
+docker build --build-arg OPENCODE_VERSION=1.15.12 -t opencode-image:latest .
 ```
+
+The Dockerfile downloads the opencode release tarball at build time — no binaries are checked into the repo.
 
 ## CI
 
-- **docker-image.yml** — on push to `main` (touching `docker/`), tags `v*`, or manual dispatch: builds the image and pushes it to `ghcr.io/<owner>/opencode-env` with `latest`, semver, and commit-SHA tags.
-- **check.yml** — type-checks `src/` with the TypeScript 7 preview (`tsgo --noEmit`).
+- **docker-image.yml** — on push to `main` (touching `docker/`), tags `v*`, or manual dispatch: builds and pushes `ghcr.io/OWNER/opencode-image` with `latest`, semver, and commit-SHA tags.
+- **check.yml** — type-checks the TypeScript example with the TypeScript 7 preview (`tsgo --noEmit`).
 
-## Development
+## Repo layout
 
-```bash
-npm install
-npm run check   # tsgo --noEmit
 ```
-
-Requires Node.js ≥ 22 (uses `tsx` to run TypeScript directly).
+docker/
+  Dockerfile               # debian:bookworm + opencode binary, CMD = opencode web
+  docker-compose.yml       # persistent deployment with named volumes
+  config/opencode.jsonc    # default opencode config baked into the image
+example/
+  microsandbox-run.ts      # minimal MicroSandbox launcher
+.github/workflows/         # GHCR image publish + type check
+```
