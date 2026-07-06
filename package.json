@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "check": "npm exec -- tsgo --noEmit",
-    "sandbox": "tsx example/microsandbox-run.ts",
-    "sandbox:custom": "tsx example/microsandbox-custom-workspace.ts"
+    "sandbox": "tsx example/microsandbox-run.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

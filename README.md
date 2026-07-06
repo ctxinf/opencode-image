@@ -67,6 +67,8 @@ Runtime env vars:
 
 The image runs under [tini](https://github.com/krallin/tini), so Ctrl+C on a foreground `docker run` stops the container cleanly.
 
+> **Note:** named volumes are seeded from the image only on first creation and keep session history across image upgrades. If the web UI opens an unexpected project dir, it is replaying old sessions from the `opencode-data` volume — remove it (`docker compose down && docker volume rm docker_opencode-data`) for a fresh start.
+
 ## 2. Run in MicroSandbox
 
 [`example/microsandbox-run.ts`](example/microsandbox-run.ts) starts the GHCR image in a microVM like `docker run --rm` — the sandbox lives as long as the script:
@@ -78,12 +80,6 @@ npm run sandbox -- 18000   # custom host port
 ```
 
 Override the image with `OPENCODE_IMAGE=...` if needed.
-
-[`example/microsandbox-custom-workspace.ts`](example/microsandbox-custom-workspace.ts) shows a customized setup: it seeds `/workspace/app1` through the sandbox fs API (`mkdir` + `write`) and starts opencode with that dir as the project:
-
-```bash
-npm run sandbox:custom
-```
 
 ## 3. Build locally (optional)
 
@@ -100,7 +96,7 @@ The Dockerfile downloads the opencode release tarball at build time — no binar
 
 ## CI
 
-- **docker-image.yml** — on push to `main`, tags `v*`, or manual dispatch: builds and pushes `ghcr.io/ctxinf/opencode-image` with `latest`, semver, and commit-SHA tags. A tag push `vX.Y.Z` builds opencode `X.Y.Z` and records it in the image description.
+- **docker-image.yml** — on tag push `v*` or manual dispatch: builds and pushes `ghcr.io/ctxinf/opencode-image` with `latest`, semver, and commit-SHA tags. A tag `vX.Y.Z` builds opencode `X.Y.Z` and records it in the image description.
 - **track-upstream.yml** — twice a month (1st/15th): builds the latest [anomalyco/opencode](https://github.com/anomalyco/opencode) release and pushes it as `latest` + `<version>`, skipping versions already published.
 - **check.yml** — type-checks the TypeScript examples with the TypeScript 7 preview (`tsgo --noEmit`).
 
@@ -113,6 +109,5 @@ docker/
   config/opencode.jsonc    # default opencode config baked into the image
 example/
   microsandbox-run.ts      # minimal MicroSandbox launcher
-  microsandbox-custom-workspace.ts  # seed a custom workspace dir via fs API
 .github/workflows/         # GHCR image publish + type check
 ```

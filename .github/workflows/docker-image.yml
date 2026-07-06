@@ -5,7 +5,6 @@ name: docker-image
 on:
   push:
     # NOTE: no `paths` filter — combining `paths` with `tags` silently skips tag builds
-    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 
